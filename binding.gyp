@@ -7,9 +7,7 @@
     {
       'target_name': 'webrtcjs',
       'sources': [
-        'src/observers/offerobserver.cc',
-        'src/observers/answerobserver.cc',
-        'src/observers/peerconnectionobserver.cc',
+        'src/observers.cc',
         'src/peerconnection.cc',
         'src/eventemitter.cc',
         'src/webrtcjs.cc'

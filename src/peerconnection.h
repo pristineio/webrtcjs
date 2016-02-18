@@ -15,26 +15,47 @@
 #include "talk/app/webrtc/peerconnectionfactory.h"
 #include "talk/app/webrtc/test/fakeconstraints.h"
 
-
-class PeerConnection : public Nan::ObjectWrap, public EventEmitter { /*public RTCWrap, public EventEmitter*/
+class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
  public:
   static NAN_MODULE_INIT(Init);
+
+  void GetUserMedia();
+  webrtc::PeerConnectionInterface* GetPeerConnection();
+
+  webrtc::FakeConstraints constraints_;
+  webrtc::PeerConnectionInterface::RTCConfiguration config_;
+
+  Nan::Persistent<v8::Function> offer_cb_;
+  Nan::Persistent<v8::Function> offer_err_cb_;
+
+  Nan::Persistent<v8::Function> answer_cb_;
+  Nan::Persistent<v8::Function> answer_err_cb_;
+
+ //  Nan::Persistent<v8::Function> _localErrorCallback;
+ //  Nan::Persistent<v8::Function> _remoteCallback;
+ //  Nan::Persistent<v8::Function> _remoteErrorCallback;
+ //  Nan::Persistent<v8::Function> _onstats;
+ //  Nan::Persistent<v8::Object> _localsdp;
+ //  Nan::Persistent<v8::Object> _remotesdp;
+
+  rtc::scoped_refptr<StatsObserver> stats_observer_;
+  rtc::scoped_refptr<OfferObserver> offer_observer_;
+  rtc::scoped_refptr<AnswerObserver> answer_observer_;
+  rtc::scoped_refptr<LocalDescriptionObserver> local_description_observer_;
+  rtc::scoped_refptr<RemoteDescriptionObserver> remote_description_observer_;
+  rtc::scoped_refptr<PeerConnectionObserver> peer_connection_observer_;
 
  private:
   // explicit PeerConnection(const v8::Local<v8::Object> &configuration,
   //                         const v8::Local<v8::Object> &constraints);
   explicit PeerConnection();
   ~PeerConnection();
-
-  static NAN_METHOD(New);
   static Nan::Persistent<v8::Function> constructor;
 
-  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
-    factory_;
+  static NAN_METHOD(New);
+  static NAN_METHOD(CreateOffer);
+  // static NAN_METHOD(CreateAnswer);
 
-  rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection_;
-
-  // static void CreateOffer(const Nan::FunctionCallbackInfo<v8::Value> &info);
   // static void CreateAnswer(const Nan::FunctionCallbackInfo<v8::Value> &info);
   // static void SetLocalDescription(const Nan::FunctionCallbackInfo<v8::Value> &info);
   // static void SetRemoteDescription(const Nan::FunctionCallbackInfo<v8::Value> &info);
@@ -74,8 +95,6 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter { /*public RT
 
   // bool IsStable();
 
-  // webrtc::PeerConnectionInterface *GetSocket();
-
  // protected:
  //  Nan::Persistent<v8::Function> _onsignalingstatechange;
  //  Nan::Persistent<v8::Function> _oniceconnectionstatechange;
@@ -84,31 +103,12 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter { /*public RT
  //  Nan::Persistent<v8::Function> _onnegotiationneeded;
  //  Nan::Persistent<v8::Function> _onaddstream;
  //  Nan::Persistent<v8::Function> _onremovestream;
- //  Nan::Persistent<v8::Function> _offerCallback;
- //  Nan::Persistent<v8::Function> _offerErrorCallback;
- //  Nan::Persistent<v8::Function> _answerCallback;
- //  Nan::Persistent<v8::Function> _answerErrorCallback;
- //  Nan::Persistent<v8::Function> _localCallback;
- //  Nan::Persistent<v8::Function> _localErrorCallback;
- //  Nan::Persistent<v8::Function> _remoteCallback;
- //  Nan::Persistent<v8::Function> _remoteErrorCallback;
- //  Nan::Persistent<v8::Function> _onstats;
- //  Nan::Persistent<v8::Object> _localsdp;
- //  Nan::Persistent<v8::Object> _remotesdp;
 
- //  static Nan::Persistent<v8::Function> constructor;
+ protected:
+  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory_;
+  rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection_;
 
- //  rtc::scoped_refptr<StatsObserver> _stats;
-  rtc::scoped_refptr<OfferObserver> offer_observer_;
-  rtc::scoped_refptr<AnswerObserver> answer_observer_;
- //  rtc::scoped_refptr<LocalDescriptionObserver> _local;
- //  rtc::scoped_refptr<RemoteDescriptionObserver> _remote;
-  rtc::scoped_refptr<PeerConnectionObserver> peer_connection_observer_;
- //  rtc::scoped_refptr<webrtc::PeerConnectionInterface> _socket;
- //  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _factory;
-
- //  rtc::scoped_refptr<MediaConstraints> _constraints;
- //  webrtc::PeerConnectionInterface::IceServers _servers;
+  // rtc::scoped_refptr<MediaConstraints> constraints_;
 };
 
 #endif

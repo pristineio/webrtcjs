@@ -17,7 +17,6 @@ EventEmitter::EventEmitter(EventEmitter* listener) : notify_(true) {
   AddListener(listener);
 }
 
-
 EventEmitter::~EventEmitter() {
   EventEmitter::RemoveAllListeners();
   EventEmitter::Dispose();
@@ -95,7 +94,6 @@ void EventEmitter::SetReference(bool alive) {
 }
 
 void EventEmitter::Emit(int event) {
-  LOG(LS_INFO) << __PRETTY_FUNCTION__ << ": event = " << event;
   EventEmitter::Emit(new rtc::RefCountedObject<Event>(event));
 }
 
