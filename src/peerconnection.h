@@ -15,6 +15,14 @@
 #include "talk/app/webrtc/peerconnectionfactory.h"
 #include "talk/app/webrtc/test/fakeconstraints.h"
 
+class BlockingThread : public rtc::Thread {
+ public:
+  virtual void Run() {
+    rtc::Thread::SetAllowBlockingCalls(true);
+    rtc::Thread::Run();
+  }
+};
+
 class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
  public:
   static NAN_MODULE_INIT(Init);

@@ -21,34 +21,6 @@ NAN_METHOD(PeerConnection::New) {
   info.GetReturnValue().Set(info.This());
 }
 
-void PeerConnection::GetUserMedia() {
-  LOG(LS_INFO) << __FUNCTION__;
-
-  std::string stream_id = "stream_1";
-  rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
-    factory_->CreateLocalMediaStream(stream_id);
-
-  // Audio
-  rtc::scoped_refptr<webrtc::AudioTrackInterface> audio_track(
-    factory_->CreateAudioTrack("audio_1",
-      factory_->CreateAudioSource(&constraints_)));
-
-  stream->AddTrack(audio_track);
-
-  // // Video
-  // FakeConstraints constraints = video_constraints;
-  // constraints.SetMandatoryMaxFrameRate(10);
-  // rtc::scoped_refptr<webrtc::VideoSourceInterface> source =
-  //     peer_connection_factory_->CreateVideoSource(
-  //         new webrtc::FakePeriodicVideoCapturer(), &constraints);
-  // std::string videotrack_label = label + kVideoTrackLabelBase;
-  // rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
-  //     peer_connection_factory_->CreateVideoTrack(videotrack_label, source));
-  // stream->AddTrack(video_track);
-
-  peer_connection_->AddStream(stream);
-}
-
 NAN_METHOD(PeerConnection::CreateOffer) {
   LOG(LS_INFO) << __FUNCTION__;
 
@@ -71,8 +43,6 @@ NAN_METHOD(PeerConnection::CreateOffer) {
   }
 
   self->GetUserMedia();
-
-  // peer_connection->CreateOffer(self->offer_observer_, &self->constraints_);
 
   info.GetReturnValue().SetUndefined();
 }
@@ -105,15 +75,6 @@ NAN_METHOD(PeerConnection::CreateOffer) {
 
 Nan::Persistent<v8::Function> PeerConnection::constructor;
 
-class BlockingThread : public rtc::Thread {
- public:
-  virtual void Run() {
-    LOG(LS_INFO) << __FUNCTION__;
-      rtc::Thread::SetAllowBlockingCalls(true);
-      rtc::Thread::Run();
-    }
-};
-
 PeerConnection::PeerConnection() {
   stats_observer_ = new rtc::RefCountedObject<StatsObserver>(this);
   offer_observer_ = new rtc::RefCountedObject<OfferObserver>(this);
@@ -141,6 +102,34 @@ PeerConnection::~PeerConnection() {
   local_description_observer_->RemoveListener(this);
   remote_description_observer_->RemoveListener(this);
   peer_connection_observer_->RemoveListener(this);
+}
+
+void PeerConnection::GetUserMedia() {
+  LOG(LS_INFO) << __FUNCTION__;
+
+  std::string stream_id = "stream_1";
+  rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
+    factory_->CreateLocalMediaStream(stream_id);
+
+  // Audio
+  rtc::scoped_refptr<webrtc::AudioTrackInterface> audio_track(
+    factory_->CreateAudioTrack("audio_1",
+      factory_->CreateAudioSource(&constraints_)));
+
+  stream->AddTrack(audio_track);
+
+  // // Video
+  // FakeConstraints constraints = video_constraints;
+  // constraints.SetMandatoryMaxFrameRate(10);
+  // rtc::scoped_refptr<webrtc::VideoSourceInterface> source =
+  //     peer_connection_factory_->CreateVideoSource(
+  //         new webrtc::FakePeriodicVideoCapturer(), &constraints);
+  // std::string videotrack_label = label + kVideoTrackLabelBase;
+  // rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
+  //     peer_connection_factory_->CreateVideoTrack(videotrack_label, source));
+  // stream->AddTrack(video_track);
+
+  peer_connection_->AddStream(stream);
 }
 
 webrtc::PeerConnectionInterface* PeerConnection::GetPeerConnection() {
@@ -183,11 +172,6 @@ void PeerConnection::On(Event *event) {
       offer_cb_.Reset();
       offer_err_cb_.Reset();
       data = event->Unwrap<std::string>();
-      // if(!reader.parse(Nan::New(data.c_str()).ToLocalChecked(), msg)) {
-      // if(!reader.parse(data, msg)) {
-      //   LOG(WARNING) << "Unknown message: " << data;
-      // }
-      // argv[0] = Json::Parse();
       argv[0] = Nan::New(data.c_str()).ToLocalChecked(); // data is offer SDP
       argc = 1;
       break;
