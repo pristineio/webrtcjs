@@ -15,14 +15,6 @@
 #include "talk/app/webrtc/peerconnectionfactory.h"
 #include "talk/app/webrtc/test/fakeconstraints.h"
 
-class BlockingThread : public rtc::Thread {
- public:
-  virtual void Run() {
-    rtc::Thread::SetAllowBlockingCalls(true);
-    rtc::Thread::Run();
-  }
-};
-
 class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
  public:
   static NAN_MODULE_INIT(Init);
@@ -39,12 +31,20 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
   Nan::Persistent<v8::Function> answer_cb_;
   Nan::Persistent<v8::Function> answer_err_cb_;
 
- //  Nan::Persistent<v8::Function> _localErrorCallback;
- //  Nan::Persistent<v8::Function> _remoteCallback;
- //  Nan::Persistent<v8::Function> _remoteErrorCallback;
+  Nan::Persistent<v8::Function> local_sdp_cb_;
+  Nan::Persistent<v8::Function> local_sdp_err_cb_;
+
+  Nan::Persistent<v8::Function> remote_sdp_cb_;
+  Nan::Persistent<v8::Function> remote_sdp_err_cb_;
+
+  Nan::Persistent<v8::Function> onicecandidate_;
+  Nan::Persistent<v8::Function> onnegotiationneeded_;
+
+
  //  Nan::Persistent<v8::Function> _onstats;
- //  Nan::Persistent<v8::Object> _localsdp;
- //  Nan::Persistent<v8::Object> _remotesdp;
+
+  Nan::Persistent<v8::Object> local_sdp_;
+  Nan::Persistent<v8::Object> remote_sdp_;
 
   rtc::scoped_refptr<StatsObserver> stats_observer_;
   rtc::scoped_refptr<OfferObserver> offer_observer_;
@@ -54,6 +54,10 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
   rtc::scoped_refptr<PeerConnectionObserver> peer_connection_observer_;
 
  private:
+  rtc::scoped_ptr<rtc::Thread> signaling_thread_;
+  rtc::scoped_ptr<rtc::Thread> worker_thread_;
+
+
   // explicit PeerConnection(const v8::Local<v8::Object> &configuration,
   //                         const v8::Local<v8::Object> &constraints);
   explicit PeerConnection();
@@ -62,9 +66,19 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
 
   static NAN_METHOD(New);
   static NAN_METHOD(CreateOffer);
-  // static NAN_METHOD(CreateAnswer);
+  static NAN_METHOD(CreateAnswer);
+  static NAN_METHOD(SetLocalDescription);
+  static NAN_METHOD(SetRemoteDescription);
+  static NAN_METHOD(AddIceCandidate);
 
-  // static void CreateAnswer(const Nan::FunctionCallbackInfo<v8::Value> &info);
+  static NAN_GETTER(GetOnNegotiationNeeded);
+  static NAN_SETTER(SetOnNegotiationNeeded);
+
+  static NAN_GETTER(GetOnIceCandidate);
+  static NAN_SETTER(SetOnIceCandidate);
+
+
+
   // static void SetLocalDescription(const Nan::FunctionCallbackInfo<v8::Value> &info);
   // static void SetRemoteDescription(const Nan::FunctionCallbackInfo<v8::Value> &info);
   // static void AddIceCandidate(const Nan::FunctionCallbackInfo<v8::Value> &info);

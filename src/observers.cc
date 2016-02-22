@@ -29,56 +29,23 @@ void RemoteDescriptionObserver::On(Event* event) {
 }
 
 void RemoteDescriptionObserver::OnSuccess() {
-  Emit(kPeerConnectionSetLocalDescription);
+  Emit(kPeerConnectionSetRemoteDescription);
 }
 
 void RemoteDescriptionObserver::OnFailure(const std::string &error) {
-  Emit(kPeerConnectionSetLocalDescriptionError, error);
+  Emit(kPeerConnectionSetRemoteDescriptionError, error);
 }
 
 //
 // OfferObserver
 //
-OfferObserver::OfferObserver(EventEmitter *listener) :
-    EventEmitter(listener) {
-  LOG(LS_INFO) << __FUNCTION__;
-}
-
-void OfferObserver::On(Event* event) {
-  LOG(LS_INFO) << __FUNCTION__;
-}
-
-void OfferObserver::OnSuccess(webrtc::SessionDescriptionInterface* desc) {
-  LOG(LS_INFO) << __FUNCTION__;
-
-  Json::StyledWriter writer;
-  Json::Value msg;
-  std::string sdp;
-  if(desc->ToString(&sdp)) {
-    msg["type"] = desc->type();
-    msg["sdp"] = sdp;
-    Emit(kPeerConnectionCreateOffer, sdp); //writer.write(msg));
-  }
-}
-
-void OfferObserver::OnFailure(const std::string &error) {
-  LOG(LS_INFO) << __FUNCTION__;
-
-  Emit(kPeerConnectionCreateOfferError, error);
-}
-
-//
-// AnswerObserver
-//
-AnswerObserver::AnswerObserver(EventEmitter *listener) :
+OfferObserver::OfferObserver(EventEmitter* listener) :
   EventEmitter(listener) { }
 
-void AnswerObserver::On(Event* event) {
-  LOG(LS_INFO) << __FUNCTION__;
-}
+void OfferObserver::On(Event* event) { }
 
-void AnswerObserver::OnSuccess(webrtc::SessionDescriptionInterface* desc) {
-  Json::StyledWriter writer;
+void OfferObserver::OnSuccess(webrtc::SessionDescriptionInterface* desc) {
+  Json::FastWriter writer;
   Json::Value msg;
   std::string sdp;
   if(desc->ToString(&sdp)) {
@@ -88,8 +55,31 @@ void AnswerObserver::OnSuccess(webrtc::SessionDescriptionInterface* desc) {
   }
 }
 
-void AnswerObserver::OnFailure(const std::string &error) {
+void OfferObserver::OnFailure(const std::string& error) {
   Emit(kPeerConnectionCreateOfferError, error);
+}
+
+//
+// AnswerObserver
+//
+AnswerObserver::AnswerObserver(EventEmitter* listener) :
+  EventEmitter(listener) { }
+
+void AnswerObserver::On(Event* event) { }
+
+void AnswerObserver::OnSuccess(webrtc::SessionDescriptionInterface* desc) {
+  Json::FastWriter writer;
+  Json::Value msg;
+  std::string sdp;
+  if(desc->ToString(&sdp)) {
+    msg["type"] = desc->type();
+    msg["sdp"] = sdp;
+    Emit(kPeerConnectionCreateAnswer, writer.write(msg));
+  }
+}
+
+void AnswerObserver::OnFailure(const std::string& error) {
+  Emit(kPeerConnectionCreateAnswerError, error);
 }
 
 //
