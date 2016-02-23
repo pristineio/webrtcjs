@@ -1,5 +1,5 @@
-#ifndef WEBRTCJS_OFFEROBSERVER_H
-#define WEBRTCJS_OFFEROBSERVER_H
+#ifndef WEBRTCJS_OBSERVERS_H
+#define WEBRTCJS_OBSERVERS_H
 
 #include "eventemitter.h"
 #include "talk/app/webrtc/peerconnectioninterface.h"

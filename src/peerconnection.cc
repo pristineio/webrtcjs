@@ -13,6 +13,8 @@ NAN_MODULE_INIT(PeerConnection::Init) {
     PeerConnection::SetRemoteDescription);
   Nan::SetPrototypeMethod(tpl, "addIceCandidate",
     PeerConnection::AddIceCandidate);
+  Nan::SetPrototypeMethod(tpl, "getStats",
+    PeerConnection::GetStats);
 
   Nan::SetAccessor(tpl->InstanceTemplate(),
     Nan::New("onnegotiationneeded").ToLocalChecked(),
@@ -261,6 +263,28 @@ NAN_METHOD(PeerConnection::AddIceCandidate) {
   info.GetReturnValue().SetUndefined();
 }
 
+NAN_METHOD(PeerConnection::GetStats) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  webrtc::PeerConnectionInterface* peer_connection = self->GetPeerConnection();
+
+  if(!peer_connection) {
+    Nan::ThrowError("Internal error");
+  }
+
+  if(!info[0].IsEmpty() && info[0]->IsFunction()) {
+    self->onstats_.Reset<v8::Function>(v8::Local<v8::Function>::Cast(info[0]));
+  }
+
+  if(!peer_connection->GetStats(self->stats_observer_.get(), 0,
+      webrtc::PeerConnectionInterface::kStatsOutputLevelStandard)) {
+    v8::Local<v8::Function> callback = Nan::New<v8::Function>(self->onstats_);
+    v8::Local<v8::Value> argv[1] = { Nan::Null() };
+    callback->Call(info.This(), 1, argv);
+    self->onstats_.Reset();
+  }
+
+  info.GetReturnValue().SetUndefined();
+}
 
 NAN_GETTER(PeerConnection::GetOnNegotiationNeeded) {
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
@@ -307,6 +331,8 @@ PeerConnection::PeerConnection() {
   peer_connection_observer_ =
     new rtc::RefCountedObject<PeerConnectionObserver>(this);
 
+  decoder_factory_.reset(new RecordingDecoderFactory(this));
+
   worker_thread_.reset(new rtc::Thread());
   worker_thread_->Start();
 
@@ -314,7 +340,7 @@ PeerConnection::PeerConnection() {
   signaling_thread_->Start();
 
   factory_ = webrtc::CreatePeerConnectionFactory(signaling_thread_.get(),
-    worker_thread_.get(), nullptr, nullptr, nullptr);
+    worker_thread_.get(), nullptr, nullptr, decoder_factory_.get());
 }
 
 PeerConnection::~PeerConnection() {
@@ -332,12 +358,15 @@ PeerConnection::~PeerConnection() {
 void PeerConnection::GetUserMedia() {
   LOG(LS_INFO) << __FUNCTION__;
 
+  // Constraints
   constraints_.AddOptional(
     webrtc::MediaConstraintsInterface::kEnableDtlsSrtp, "true");
+  constraints_.AddMandatory(
+    webrtc::MediaConstraintsInterface::kOfferToReceiveVideo, "true");
 
-  std::string stream_id = "stream_1";
+  // MediaStream
   rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
-    factory_->CreateLocalMediaStream(stream_id);
+    factory_->CreateLocalMediaStream("stream_1");
 
   // Audio
   rtc::scoped_refptr<webrtc::AudioTrackInterface> audio_track(
@@ -346,16 +375,15 @@ void PeerConnection::GetUserMedia() {
 
   stream->AddTrack(audio_track);
 
-  // // Video
-  // FakeConstraints constraints = video_constraints;
-  // constraints.SetMandatoryMaxFrameRate(10);
-  // rtc::scoped_refptr<webrtc::VideoSourceInterface> source =
-  //     peer_connection_factory_->CreateVideoSource(
-  //         new webrtc::FakePeriodicVideoCapturer(), &constraints);
-  // std::string videotrack_label = label + kVideoTrackLabelBase;
-  // rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
-  //     peer_connection_factory_->CreateVideoTrack(videotrack_label, source));
-  // stream->AddTrack(video_track);
+  // Video
+  rtc::scoped_refptr<webrtc::VideoSourceInterface> video_source =
+    factory_->CreateVideoSource(new webrtc::FakePeriodicVideoCapturer(),
+      &constraints_);
+
+  rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
+    factory_->CreateVideoTrack("video_1", video_source));
+
+  stream->AddTrack(video_track);
 
   peer_connection_->AddStream(stream);
 }
@@ -387,6 +415,14 @@ void PeerConnection::On(Event *event) {
   std::string data;
 
   switch(type) {
+    case kVideoDecoderCreated:
+      LOG(LS_INFO) << "kVideoDecoderCreated";
+      break;
+
+    case kVideoDecoderDestroyed:
+      LOG(LS_INFO) << "kVideoDecoderDestroyed";
+      break;
+
     case kPeerConnectionAddStream:
     case kPeerConnectionCreateClosed:
     case kPeerConnectionDataChannel:
@@ -394,7 +430,18 @@ void PeerConnection::On(Event *event) {
     case kPeerConnectionIceGathering:
     case kPeerConnectionRemoveStream:
     case kPeerConnectionSignalChange:
+      break;
+
     case kPeerConnectionStats:
+      fn = Nan::New<v8::Function>(onstats_);
+
+      // v8::Local<v8::Array> stats_reports = Nan::New<v8::Array>(reports.size());
+
+      // std::vector<const webrtc::StatsReport*> raw =
+      //   event->Unwrap<webrtc::StatsReports>();
+
+      argv[0] = { Nan::Null() };
+      argc = 1;
       break;
 
     case kPeerConnectionCreateOffer:

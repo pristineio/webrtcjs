@@ -1,19 +1,19 @@
 #ifndef WEBRTCJS_PEERCONNECTION_H
 #define WEBRTCJS_PEERCONNECTION_H
 
-// #include "Common.h"
-// #include "Observers.h"
-#include "eventemitter.h"
-#include "observers.h"
-
-// #include "MediaConstraints.h"
-// #include "Wrap.h"
-
 #include <nan.h>
 
 #include "webrtc/base/scoped_ptr.h"
+#include "talk/app/webrtc/videosourceinterface.h"
+#include "webrtc/media/webrtc/webrtcvideodecoderfactory.h"
 #include "talk/app/webrtc/peerconnectionfactory.h"
+
 #include "talk/app/webrtc/test/fakeconstraints.h"
+#include "talk/app/webrtc/test/fakeperiodicvideocapturer.h"
+
+#include "eventemitter.h"
+#include "observers.h"
+#include "recording_decoder.h"
 
 class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
  public:
@@ -39,6 +39,7 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
 
   Nan::Persistent<v8::Function> onicecandidate_;
   Nan::Persistent<v8::Function> onnegotiationneeded_;
+  Nan::Persistent<v8::Function> onstats_;
 
 
  //  Nan::Persistent<v8::Function> _onstats;
@@ -70,6 +71,7 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
   static NAN_METHOD(SetLocalDescription);
   static NAN_METHOD(SetRemoteDescription);
   static NAN_METHOD(AddIceCandidate);
+  static NAN_METHOD(GetStats);
 
   static NAN_GETTER(GetOnNegotiationNeeded);
   static NAN_SETTER(SetOnNegotiationNeeded);
@@ -129,6 +131,8 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
  protected:
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory_;
   rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection_;
+  rtc::scoped_ptr<cricket::WebRtcVideoDecoderFactory> decoder_factory_;
+  // rtc::scoped_refptr<webrtc::PeerConnectionInterface> encoder_factory_;
 
   // rtc::scoped_refptr<MediaConstraints> constraints_;
 };

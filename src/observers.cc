@@ -88,12 +88,9 @@ void AnswerObserver::OnFailure(const std::string& error) {
 StatsObserver::StatsObserver(EventEmitter* listener) :
   EventEmitter(listener) { }
 
-void StatsObserver::On(Event* event) {
-  LOG(LS_INFO) << __FUNCTION__;
-}
+void StatsObserver::On(Event* event) { }
 
-void StatsObserver::OnComplete(const webrtc::StatsReports &reports) {
-  LOG(LS_INFO) << __FUNCTION__;
+void StatsObserver::OnComplete(const webrtc::StatsReports& reports) {
   Emit(kPeerConnectionStats, reports);
 }
 

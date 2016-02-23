@@ -7,6 +7,7 @@
     {
       'target_name': 'webrtcjs',
       'sources': [
+        'src/recording_decoder.cc',
         'src/observers.cc',
         'src/peerconnection.cc',
         'src/eventemitter.cc',
@@ -26,8 +27,6 @@
         '_LARGEFILE_SOURCE',
         '_FILE_OFFSET_BITS=64',
         '_GLIBCXX_DEBUG=0',
-        # '_GLIBCXX_CONCEPT_CHECKS=0',
-        # '_GLIBCXX_DEBUG_PEDANTIC=0',
       ],
       'link_settings': {
         'libraries': [
@@ -58,7 +57,6 @@
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libaudio_encoder_interface.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libaudio_decoder_interface.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libmedia_file.a',
-          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/common_video/libcommon_video.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/libyuv.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libjpeg_turbo/libjpeg_turbo.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/libwebrtc.a',
@@ -85,6 +83,7 @@
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libwebrtc_h264.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libwebrtc_i420.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/video_coding/codecs/vp8/libwebrtc_vp8.a',
+          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/common_video/libcommon_video.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/video_coding/utility/libvideo_coding_utility.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_new.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_mmx.a',

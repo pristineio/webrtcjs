@@ -31,7 +31,9 @@ enum PeerConnectionEvent {
   kPeerConnectionAddStream,
   kPeerConnectionRemoveStream,
   kPeerConnectionRenegotiation,
-  kPeerConnectionStats
+  kPeerConnectionStats,
+  kVideoDecoderCreated,
+  kVideoDecoderDestroyed,
 };
 
 template<class T> class EventWrapper;

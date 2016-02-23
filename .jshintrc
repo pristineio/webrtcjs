@@ -1,0 +1,13 @@
+{
+  "mocha": true,
+  "freeze": true,
+  "node": true,
+  "strict": true,
+  "bitwise": false,
+  "curly": true,
+  "trailing": true,
+  "indent": 2,
+  "maxparams": 4,
+  "maxdepth": 6,
+  "maxstatements": 40
+}
