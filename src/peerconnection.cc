@@ -1,5 +1,7 @@
 #include "peerconnection.h"
 
+Nan::Persistent<v8::Function> PeerConnection::constructor;
+
 NAN_MODULE_INIT(PeerConnection::Init) {
   v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
   tpl->SetClassName(Nan::New("PeerConnection").ToLocalChecked());
@@ -7,14 +9,13 @@ NAN_MODULE_INIT(PeerConnection::Init) {
 
   Nan::SetPrototypeMethod(tpl, "createOffer", PeerConnection::CreateOffer);
   Nan::SetPrototypeMethod(tpl, "createAnswer", PeerConnection::CreateAnswer);
+  Nan::SetPrototypeMethod(tpl, "getStats", PeerConnection::GetStats);
   Nan::SetPrototypeMethod(tpl, "setLocalDescription",
     PeerConnection::SetLocalDescription);
   Nan::SetPrototypeMethod(tpl, "setRemoteDescription",
     PeerConnection::SetRemoteDescription);
   Nan::SetPrototypeMethod(tpl, "addIceCandidate",
     PeerConnection::AddIceCandidate);
-  Nan::SetPrototypeMethod(tpl, "getStats",
-    PeerConnection::GetStats);
 
   Nan::SetAccessor(tpl->InstanceTemplate(),
     Nan::New("onnegotiationneeded").ToLocalChecked(),
@@ -317,9 +318,6 @@ NAN_SETTER(PeerConnection::SetOnIceCandidate) {
   }
 }
 
-
-Nan::Persistent<v8::Function> PeerConnection::constructor;
-
 PeerConnection::PeerConnection() {
   stats_observer_ = new rtc::RefCountedObject<StatsObserver>(this);
   offer_observer_ = new rtc::RefCountedObject<OfferObserver>(this);
@@ -331,16 +329,16 @@ PeerConnection::PeerConnection() {
   peer_connection_observer_ =
     new rtc::RefCountedObject<PeerConnectionObserver>(this);
 
-  decoder_factory_.reset(new RecordingDecoderFactory(this));
+  // decoder_factory_.reset(new RecordingDecoderFactory(this));
 
-  worker_thread_.reset(new rtc::Thread());
-  worker_thread_->Start();
+  // worker_thread_.reset(new rtc::Thread());
+  // worker_thread_->Start();
 
-  signaling_thread_.reset(new rtc::Thread());
-  signaling_thread_->Start();
+  // signaling_thread_.reset(new rtc::Thread());
+  // signaling_thread_->Start();
 
-  factory_ = webrtc::CreatePeerConnectionFactory(signaling_thread_.get(),
-    worker_thread_.get(), nullptr, nullptr, decoder_factory_.get());
+  // factory_ = webrtc::CreatePeerConnectionFactory(signaling_thread_.get(),
+  //   worker_thread_.get(), nullptr, nullptr, decoder_factory_.get());
 }
 
 PeerConnection::~PeerConnection() {
@@ -351,52 +349,50 @@ PeerConnection::~PeerConnection() {
   local_description_observer_->RemoveListener(this);
   remote_description_observer_->RemoveListener(this);
   peer_connection_observer_->RemoveListener(this);
-  signaling_thread_->Stop();
-  worker_thread_->Stop();
 }
 
 void PeerConnection::GetUserMedia() {
   LOG(LS_INFO) << __FUNCTION__;
 
-  // Constraints
-  constraints_.AddOptional(
-    webrtc::MediaConstraintsInterface::kEnableDtlsSrtp, "true");
-  constraints_.AddMandatory(
-    webrtc::MediaConstraintsInterface::kOfferToReceiveVideo, "true");
+  // // Constraints
+  // constraints_.AddOptional(
+  //   webrtc::MediaConstraintsInterface::kEnableDtlsSrtp, "true");
+  // constraints_.AddMandatory(
+  //   webrtc::MediaConstraintsInterface::kOfferToReceiveVideo, "true");
 
-  // MediaStream
-  rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
-    factory_->CreateLocalMediaStream("stream_1");
+  // // MediaStream
+  // rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
+  //   factory_->CreateLocalMediaStream("stream_1");
 
-  // Audio
-  rtc::scoped_refptr<webrtc::AudioTrackInterface> audio_track(
-    factory_->CreateAudioTrack("audio_1",
-      factory_->CreateAudioSource(&constraints_)));
+  // // Audio
+  // rtc::scoped_refptr<webrtc::AudioTrackInterface> audio_track(
+  //   factory_->CreateAudioTrack("audio_1",
+  //     factory_->CreateAudioSource(&constraints_)));
 
-  stream->AddTrack(audio_track);
+  // stream->AddTrack(audio_track);
 
-  // Video
-  rtc::scoped_refptr<webrtc::VideoSourceInterface> video_source =
-    factory_->CreateVideoSource(new webrtc::FakePeriodicVideoCapturer(),
-      &constraints_);
+  // // Video
+  // rtc::scoped_refptr<webrtc::VideoSourceInterface> video_source =
+  //   factory_->CreateVideoSource(new webrtc::FakePeriodicVideoCapturer(),
+  //     &constraints_);
 
-  rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
-    factory_->CreateVideoTrack("video_1", video_source));
+  // rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
+  //   factory_->CreateVideoTrack("video_1", video_source));
 
-  stream->AddTrack(video_track);
+  // stream->AddTrack(video_track);
 
-  peer_connection_->AddStream(stream);
+  // peer_connection_->AddStream(stream);
 }
 
 webrtc::PeerConnectionInterface* PeerConnection::GetPeerConnection() {
-  if(!factory_.get()) {
-    Nan::ThrowError("Internal Factory Error");
-  }
-  if(!peer_connection_.get()) {
-    EventEmitter::SetReference(true);
-    peer_connection_ = factory_->CreatePeerConnection(config_, &constraints_,
-      nullptr, nullptr, peer_connection_observer_);
-  }
+  // if(!factory_.get()) {
+  //   Nan::ThrowError("Internal Factory Error");
+  // }
+  // if(!peer_connection_.get()) {
+  //   EventEmitter::SetReference(true);
+  //   peer_connection_ = factory_->CreatePeerConnection(config_, &constraints_,
+  //     nullptr, nullptr, peer_connection_observer_);
+  // }
   return peer_connection_.get();
 }
 

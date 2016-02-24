@@ -1,20 +1,28 @@
-#include <nan.h>
-#include "peerconnection.h"
+#include "webrtcjs.h"
 
-#include "webrtc/base/checks.h"
-#include "webrtc/base/ssladapter.h"
+rtc::scoped_ptr<cricket::DeviceManagerInterface> device_manager_;
 
-using v8::FunctionTemplate;
-using v8::Handle;
-using v8::Object;
-using v8::String;
-using Nan::GetFunction;
-using Nan::New;
-using Nan::Set;
+rtc::scoped_ptr<rtc::Thread> signaling_thread_;
+rtc::scoped_ptr<rtc::Thread> worker_thread_;
 
-NAN_MODULE_INIT(InitAll) {
+// rtc::scoped_ptr<cricket::WebRtcVideoDecoderFactory> decoder_factory_;
+rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory_;
+
+void WebRtcJs::Init() {
   RTC_CHECK(rtc::InitializeSSL()) << "Failed to InitializeSSL()";
-  PeerConnection::Init(target);
+
+  device_manager_.reset(cricket::DeviceManagerFactory::Create());
+
+  worker_thread_.reset(new rtc::Thread());
+  worker_thread_->Start();
+
+  signaling_thread_.reset(new rtc::Thread());
+  signaling_thread_->Start();
+
+  // pc_factory_ = webrtc::CreatePeerConnectionFactory(signaling_thread_.get(),
+  //   worker_thread_.get(), nullptr, nullptr, nullptr);
 }
 
-NODE_MODULE(addon, InitAll)
+cricket::DeviceManagerInterface* WebRtcJs::GetDeviceManager() {
+  return device_manager_.get();
+}

@@ -13,7 +13,7 @@
 
 #include "eventemitter.h"
 #include "observers.h"
-#include "recording_decoder.h"
+// #include "recording_decoder.h"
 
 class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
  public:
@@ -55,8 +55,8 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
   rtc::scoped_refptr<PeerConnectionObserver> peer_connection_observer_;
 
  private:
-  rtc::scoped_ptr<rtc::Thread> signaling_thread_;
-  rtc::scoped_ptr<rtc::Thread> worker_thread_;
+  // rtc::scoped_ptr<rtc::Thread> signaling_thread_;
+  // rtc::scoped_ptr<rtc::Thread> worker_thread_;
 
 
   // explicit PeerConnection(const v8::Local<v8::Object> &configuration,
@@ -129,9 +129,9 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
  //  Nan::Persistent<v8::Function> _onremovestream;
 
  protected:
-  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory_;
+  // rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory_;
   rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection_;
-  rtc::scoped_ptr<cricket::WebRtcVideoDecoderFactory> decoder_factory_;
+  // rtc::scoped_ptr<cricket::WebRtcVideoDecoderFactory> decoder_factory_;
   // rtc::scoped_refptr<webrtc::PeerConnectionInterface> encoder_factory_;
 
   // rtc::scoped_refptr<MediaConstraints> constraints_;

@@ -24,7 +24,7 @@ class RecordingDecoder : public webrtc::VideoDecoder {
  public:
   RecordingDecoder(webrtc::VideoCodecType type);
   int32_t InitDecode(const webrtc::VideoCodec* codecSettings, int32_t numberOfCores)
-  override;
+    override;
 
   int32_t Decode(const webrtc::EncodedImage& inputImage, bool missingFrames,
     const webrtc::RTPFragmentationHeader* fragmentation,

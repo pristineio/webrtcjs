@@ -7,7 +7,6 @@
 
 #include "webrtc/base/refcount.h"
 #include "webrtc/base/scoped_ref_ptr.h"
-
 #include "talk/app/webrtc/peerconnectioninterface.h"
 
 using std::vector;
