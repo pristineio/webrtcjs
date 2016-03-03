@@ -7,12 +7,12 @@
 
 #include "webrtc/base/refcount.h"
 #include "webrtc/base/scoped_ref_ptr.h"
-#include "talk/app/webrtc/peerconnectioninterface.h"
+#include "webrtc/api/peerconnectioninterface.h"
 
 using std::vector;
 using std::queue;
 
-enum PeerConnectionEvent {
+enum EventType {
   kPeerConnectionCreateClosed = 1,
   kPeerConnectionCreateOffer,
   kPeerConnectionCreateOfferError,
@@ -33,6 +33,8 @@ enum PeerConnectionEvent {
   kPeerConnectionStats,
   kVideoDecoderCreated,
   kVideoDecoderDestroyed,
+  kMediaStreamChanged,
+  kMediaStreamTrackChanged,
 };
 
 template<class T> class EventWrapper;

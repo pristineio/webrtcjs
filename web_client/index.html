@@ -1,0 +1,38 @@
+<html>
+<head>
+  <title>PeerConnection server test page</title>
+</head>
+<body>
+  <div id="container">
+    <div id="remote">
+      <video autoplay id="local-video" width="25%" height="25%" style="border: 1px solid rgba(0,0,0,0.2);"></video>
+      <video autoplay id="remote-video" width="25%" height="25%" style="border: 1px solid rgba(0,0,0,0.2);"></video>
+    </div>
+    <div>
+      <button id="startButton">Start</button>
+      <button id="callButton">Call</button>
+      <button id="hangupButton">Hang Up</button>
+    </div>
+  </div>
+  <br>
+  Server: <input type="text" id="server" value="wss://ubuntu:3232/ws" /><br>
+  Your name: <input type="text" id="local" value="alice"/>
+  <button id="connect" onclick="connect();">Connect</button>
+  <button disabled="true" id="disconnect" onclick="disconnect();">Disconnect</button>
+  <br>
+  <button onclick="document.getElementById('debug').innerHTML='';">Clear log</button>
+  <pre id="debug"></pre>
+  <br>
+  <hr>
+  <script src="adapter.js"></script>
+  <script src="main.js"></script>
+  <script>
+  window.addEventListener('DOMContentLoaded', function() {
+    var name = window.location.hash.replace('#', '');
+    start();
+    connect(name);
+  });
+  </script>
+</body>
+</html>
+

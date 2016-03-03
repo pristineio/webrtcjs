@@ -2,6 +2,28 @@
 
 Nan::Persistent<v8::Function> PeerConnection::constructor;
 
+PeerConnection::PeerConnection() {
+  stats_observer_ = new rtc::RefCountedObject<StatsObserver>(this);
+  offer_observer_ = new rtc::RefCountedObject<OfferObserver>(this);
+  answer_observer_ = new rtc::RefCountedObject<AnswerObserver>(this);
+  local_description_observer_ =
+    new rtc::RefCountedObject<LocalDescriptionObserver>(this);
+  remote_description_observer_ =
+    new rtc::RefCountedObject<RemoteDescriptionObserver>(this);
+  peer_connection_observer_ =
+    new rtc::RefCountedObject<PeerConnectionObserver>(this);
+}
+
+PeerConnection::~PeerConnection() {
+  LOG(LS_INFO) << __FUNCTION__;
+  stats_observer_->RemoveListener(this);
+  offer_observer_->RemoveListener(this);
+  answer_observer_->RemoveListener(this);
+  local_description_observer_->RemoveListener(this);
+  remote_description_observer_->RemoveListener(this);
+  peer_connection_observer_->RemoveListener(this);
+}
+
 NAN_MODULE_INIT(PeerConnection::Init) {
   v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
   tpl->SetClassName(Nan::New("PeerConnection").ToLocalChecked());
@@ -10,6 +32,9 @@ NAN_MODULE_INIT(PeerConnection::Init) {
   Nan::SetPrototypeMethod(tpl, "createOffer", PeerConnection::CreateOffer);
   Nan::SetPrototypeMethod(tpl, "createAnswer", PeerConnection::CreateAnswer);
   Nan::SetPrototypeMethod(tpl, "getStats", PeerConnection::GetStats);
+  Nan::SetPrototypeMethod(tpl, "addStream", PeerConnection::AddStream);
+  Nan::SetPrototypeMethod(tpl, "removeStream", PeerConnection::RemoveStream);
+  Nan::SetPrototypeMethod(tpl, "close", PeerConnection::Close);
   Nan::SetPrototypeMethod(tpl, "setLocalDescription",
     PeerConnection::SetLocalDescription);
   Nan::SetPrototypeMethod(tpl, "setRemoteDescription",
@@ -27,8 +52,31 @@ NAN_MODULE_INIT(PeerConnection::Init) {
     PeerConnection::GetOnIceCandidate,
     PeerConnection::SetOnIceCandidate);
 
+  Nan::SetAccessor(tpl->InstanceTemplate(),
+    Nan::New("oniceconnectionstatechange").ToLocalChecked(),
+    PeerConnection::GetOnIceConnectionStateChange,
+    PeerConnection::SetOnIceConnectionStateChange);
+
+  Nan::SetAccessor(tpl->InstanceTemplate(),
+    Nan::New("onsignalingstatechange").ToLocalChecked(),
+    PeerConnection::GetOnSignalingStateChange,
+    PeerConnection::SetOnSignalingStateChange);
+
+  Nan::SetAccessor(tpl->InstanceTemplate(),
+    Nan::New("onaddstream").ToLocalChecked(),
+    PeerConnection::GetOnAddStream,
+    PeerConnection::SetOnAddStream);
+
+  Nan::SetAccessor(tpl->InstanceTemplate(),
+    Nan::New("onremovestream").ToLocalChecked(),
+    PeerConnection::GetOnRemoveStream);
+
+  Nan::SetAccessor(tpl->InstanceTemplate(),
+    Nan::New("signalingState").ToLocalChecked(),
+    PeerConnection::GetSignalingState);
+
   constructor.Reset(Nan::GetFunction(tpl).ToLocalChecked());
-  Nan::Set(target, Nan::New("PeerConnection").ToLocalChecked(),
+  Nan::Set(target, Nan::New("RTCPeerConnection").ToLocalChecked(),
     Nan::GetFunction(tpl).ToLocalChecked());
 }
 
@@ -42,15 +90,18 @@ NAN_METHOD(PeerConnection::New) {
 }
 
 NAN_METHOD(PeerConnection::CreateOffer) {
-  LOG(LS_INFO) << __FUNCTION__;
-
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
   self->offer_cb_.Reset();
   self->offer_err_cb_.Reset();
 
   webrtc::PeerConnectionInterface* peer_connection = self->GetPeerConnection();
   if(!peer_connection) {
-    Nan::ThrowError("Internal Error");
+    Nan::ThrowError("Bad pointer to PeerConnectionInterface");
+  }
+
+  MediaConstraints* constraints = self->GetConstraints();
+  if(!constraints) {
+    LOG(LS_INFO) << __FUNCTION__ << ": MediaConstraints is NULL";
   }
 
   if(!info[0].IsEmpty() && info[0]->IsFunction()) {
@@ -58,37 +109,42 @@ NAN_METHOD(PeerConnection::CreateOffer) {
   }
 
   if(!info[1].IsEmpty() && info[1]->IsFunction()) {
-    self->offer_err_cb_.Reset<v8::Function>(
-      v8::Local<v8::Function>::Cast(info[1]));
+    self->offer_err_cb_.Reset<v8::Function>(v8::Local<v8::Function>::Cast(
+      info[1]));
   }
 
-  self->GetUserMedia();
+  peer_connection->CreateOffer(self->offer_observer_.get(), nullptr);
+    // constraints->ToConstraints());
 
   info.GetReturnValue().SetUndefined();
 }
 
 NAN_METHOD(PeerConnection::CreateAnswer) {
-  LOG(LS_INFO) << __FUNCTION__;
-
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
   self->answer_cb_.Reset();
   self->answer_err_cb_.Reset();
 
   webrtc::PeerConnectionInterface* peer_connection = self->GetPeerConnection();
   if(!peer_connection) {
-    Nan::ThrowError("Internal Error");
+    Nan::ThrowError("Bad pointer to PeerConnectionInterface");
+  }
+
+  MediaConstraints* constraints = self->GetConstraints();
+  if(!constraints) {
+    LOG(LS_INFO) << __FUNCTION__ << ": MediaConstraints is NULL";
   }
 
   if(!info[0].IsEmpty() && info[0]->IsFunction()) {
-    self->answer_cb_.Reset<v8::Function>(
-      v8::Local<v8::Function>::Cast(info[0]));
+    self->answer_cb_.Reset<v8::Function>(v8::Local<v8::Function>::Cast(
+      info[0]));
   }
   if(!info[1].IsEmpty() && info[1]->IsFunction()) {
-    self->answer_err_cb_.Reset<v8::Function>(
-      v8::Local<v8::Function>::Cast(info[1]));
+    self->answer_err_cb_.Reset<v8::Function>(v8::Local<v8::Function>::Cast(
+      info[1]));
   }
 
   peer_connection->CreateAnswer(self->answer_observer_.get(), nullptr);
+    // constraints->ToConstraints());
 
   info.GetReturnValue().SetUndefined();
 }
@@ -287,6 +343,86 @@ NAN_METHOD(PeerConnection::GetStats) {
   info.GetReturnValue().SetUndefined();
 }
 
+
+NAN_METHOD(PeerConnection::AddStream) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  rtc::scoped_refptr<webrtc::MediaStreamInterface> media_stream =
+    MediaStream::Unwrap(info[0]);
+  webrtc::PeerConnectionInterface* peer_connection = self->GetPeerConnection();
+  info.GetReturnValue().SetUndefined();
+  if(!media_stream.get()) {
+    return Nan::ThrowError("Bad pointer to MediaStreamInterface");
+  }
+  if(!peer_connection) {
+    return Nan::ThrowError("Bad pointer to PeerConnectionInterface");
+  }
+  if(!peer_connection->AddStream(media_stream)) {
+    return Nan::ThrowError("AddStream Failed");
+  }
+}
+
+NAN_METHOD(PeerConnection::RemoveStream) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  rtc::scoped_refptr<webrtc::MediaStreamInterface> media_stream =
+    MediaStream::Unwrap(info[0]);
+  webrtc::PeerConnectionInterface* peer_connection = self->GetPeerConnection();
+  info.GetReturnValue().SetUndefined();
+  if(!media_stream.get()) {
+    return Nan::ThrowError("Bad pointer to MediaStreamInterface");
+  }
+  if(!peer_connection) {
+    return Nan::ThrowError("Bad pointer to PeerConnectionInterface");
+  }
+  peer_connection->RemoveStream(media_stream);
+}
+
+NAN_METHOD(PeerConnection::Close) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  webrtc::PeerConnectionInterface* peer_connection = self->GetPeerConnection();
+  if(!peer_connection) {
+    return;
+  }
+  peer_connection->Close();
+  info.GetReturnValue().SetUndefined();
+}
+
+NAN_GETTER(PeerConnection::GetSignalingState) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  webrtc::PeerConnectionInterface* peer_connection = self->GetPeerConnection();
+  info.GetReturnValue().SetUndefined();
+  if(!peer_connection) {
+    return;
+  }
+  webrtc::PeerConnectionInterface::SignalingState
+    state(peer_connection->signaling_state());
+  switch(state) {
+    case webrtc::PeerConnectionInterface::kStable:
+      return info.GetReturnValue().Set(Nan::New("stable").ToLocalChecked());
+    case webrtc::PeerConnectionInterface::kHaveLocalOffer:
+      return info.GetReturnValue().Set(Nan::New("have-local-offer")
+        .ToLocalChecked());
+    case webrtc::PeerConnectionInterface::kHaveLocalPrAnswer:
+      return info.GetReturnValue().Set(Nan::New("have-local-pranswer")
+        .ToLocalChecked());
+    case webrtc::PeerConnectionInterface::kHaveRemoteOffer:
+      return info.GetReturnValue().Set(Nan::New("have-remote-offer")
+        .ToLocalChecked());
+    case webrtc::PeerConnectionInterface::kHaveRemotePrAnswer:
+      return info.GetReturnValue().Set(Nan::New("have-remote-pranswer")
+        .ToLocalChecked());
+    default:
+      return info.GetReturnValue().Set(Nan::New("closed").ToLocalChecked());
+  }
+}
+
+
+NAN_GETTER(PeerConnection::GetOnRemoveStream) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  return info.GetReturnValue().Set(Nan::New<v8::Function>(
+    self->onremovestream_));
+}
+
+
 NAN_GETTER(PeerConnection::GetOnNegotiationNeeded) {
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
   return info.GetReturnValue().Set(Nan::New<v8::Function>(
@@ -318,86 +454,70 @@ NAN_SETTER(PeerConnection::SetOnIceCandidate) {
   }
 }
 
-PeerConnection::PeerConnection() {
-  stats_observer_ = new rtc::RefCountedObject<StatsObserver>(this);
-  offer_observer_ = new rtc::RefCountedObject<OfferObserver>(this);
-  answer_observer_ = new rtc::RefCountedObject<AnswerObserver>(this);
-  local_description_observer_ =
-    new rtc::RefCountedObject<LocalDescriptionObserver>(this);
-  remote_description_observer_ =
-    new rtc::RefCountedObject<RemoteDescriptionObserver>(this);
-  peer_connection_observer_ =
-    new rtc::RefCountedObject<PeerConnectionObserver>(this);
 
-  // decoder_factory_.reset(new RecordingDecoderFactory(this));
-
-  // worker_thread_.reset(new rtc::Thread());
-  // worker_thread_->Start();
-
-  // signaling_thread_.reset(new rtc::Thread());
-  // signaling_thread_->Start();
-
-  // factory_ = webrtc::CreatePeerConnectionFactory(signaling_thread_.get(),
-  //   worker_thread_.get(), nullptr, nullptr, decoder_factory_.get());
+NAN_GETTER(PeerConnection::GetOnIceConnectionStateChange) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  return info.GetReturnValue().Set(Nan::New<v8::Function>(
+    self->oniceconnectionstatechange_));
 }
 
-PeerConnection::~PeerConnection() {
-  LOG(LS_INFO) << __FUNCTION__;
-  stats_observer_->RemoveListener(this);
-  offer_observer_->RemoveListener(this);
-  answer_observer_->RemoveListener(this);
-  local_description_observer_->RemoveListener(this);
-  remote_description_observer_->RemoveListener(this);
-  peer_connection_observer_->RemoveListener(this);
+NAN_SETTER(PeerConnection::SetOnIceConnectionStateChange) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  self->oniceconnectionstatechange_.Reset();
+  if(!value.IsEmpty() && value->IsFunction()) {
+    self->oniceconnectionstatechange_.Reset<v8::Function>(
+      v8::Local<v8::Function>::Cast(value));
+  }
 }
 
-void PeerConnection::GetUserMedia() {
-  LOG(LS_INFO) << __FUNCTION__;
 
-  // // Constraints
-  // constraints_.AddOptional(
-  //   webrtc::MediaConstraintsInterface::kEnableDtlsSrtp, "true");
-  // constraints_.AddMandatory(
-  //   webrtc::MediaConstraintsInterface::kOfferToReceiveVideo, "true");
+NAN_GETTER(PeerConnection::GetOnSignalingStateChange) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  return info.GetReturnValue().Set(Nan::New<v8::Function>(
+    self->onsignalingstatechange_));
+}
 
-  // // MediaStream
-  // rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
-  //   factory_->CreateLocalMediaStream("stream_1");
+NAN_SETTER(PeerConnection::SetOnSignalingStateChange) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  self->onsignalingstatechange_.Reset();
+  if(!value.IsEmpty() && value->IsFunction()) {
+    self->onsignalingstatechange_.Reset<v8::Function>(
+      v8::Local<v8::Function>::Cast(value));
+  }
+}
 
-  // // Audio
-  // rtc::scoped_refptr<webrtc::AudioTrackInterface> audio_track(
-  //   factory_->CreateAudioTrack("audio_1",
-  //     factory_->CreateAudioSource(&constraints_)));
 
-  // stream->AddTrack(audio_track);
+NAN_GETTER(PeerConnection::GetOnAddStream) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  return info.GetReturnValue().Set(Nan::New<v8::Function>(
+    self->onaddstream_));
+}
 
-  // // Video
-  // rtc::scoped_refptr<webrtc::VideoSourceInterface> video_source =
-  //   factory_->CreateVideoSource(new webrtc::FakePeriodicVideoCapturer(),
-  //     &constraints_);
-
-  // rtc::scoped_refptr<webrtc::VideoTrackInterface> video_track(
-  //   factory_->CreateVideoTrack("video_1", video_source));
-
-  // stream->AddTrack(video_track);
-
-  // peer_connection_->AddStream(stream);
+NAN_SETTER(PeerConnection::SetOnAddStream) {
+  PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
+  self->onaddstream_.Reset();
+  if(!value.IsEmpty() && value->IsFunction()) {
+    self->onaddstream_.Reset<v8::Function>(
+      v8::Local<v8::Function>::Cast(value));
+  }
 }
 
 webrtc::PeerConnectionInterface* PeerConnection::GetPeerConnection() {
-  // if(!factory_.get()) {
-  //   Nan::ThrowError("Internal Factory Error");
-  // }
-  // if(!peer_connection_.get()) {
-  //   EventEmitter::SetReference(true);
-  //   peer_connection_ = factory_->CreatePeerConnection(config_, &constraints_,
-  //     nullptr, nullptr, peer_connection_observer_);
-  // }
+  if(!peer_connection_.get()) {
+    EventEmitter::SetReference(true);
+    peer_connection_ = WebRtcJs::GetPeerConnectionFactory()->
+      CreatePeerConnection(config_, constraints_->ToConstraints(), nullptr,
+        nullptr, peer_connection_observer_.get());
+  }
   return peer_connection_.get();
 }
 
+MediaConstraints* PeerConnection::GetConstraints() {
+  return constraints_.get();
+}
+
 void PeerConnection::On(Event *event) {
-  PeerConnectionEvent type = event->As<PeerConnectionEvent>();
+  EventType type = event->As<EventType>();
 
   Nan::HandleScope scope;
 
@@ -420,12 +540,30 @@ void PeerConnection::On(Event *event) {
       break;
 
     case kPeerConnectionAddStream:
+      fn = Nan::New<v8::Function>(onaddstream_);
+      argv[0] = MediaStream::New(
+        event->Unwrap<rtc::scoped_refptr<webrtc::MediaStreamInterface>>());
+      argc = 1;
+      break;
+
     case kPeerConnectionCreateClosed:
     case kPeerConnectionDataChannel:
-    case kPeerConnectionIceChange:
     case kPeerConnectionIceGathering:
+      break;
+
     case kPeerConnectionRemoveStream:
+      fn = Nan::New<v8::Function>(onremovestream_);
+      container = Nan::New<v8::Object>();
+      container->Set(Nan::New("stream").ToLocalChecked(),
+        MediaStream::New(
+          event->Unwrap<rtc::scoped_refptr<webrtc::MediaStreamInterface>>()));
+      argv[0] = container;
+      argc = 1;
+      break;
+
     case kPeerConnectionSignalChange:
+    case kMediaStreamChanged:
+    case kMediaStreamTrackChanged:
       break;
 
     case kPeerConnectionStats:
@@ -480,6 +618,10 @@ void PeerConnection::On(Event *event) {
       argc = 1;
       break;
 
+    case kPeerConnectionIceChange:
+      fn = Nan::New<v8::Function>(oniceconnectionstatechange_);
+      break;
+
     case kPeerConnectionIceCandidate:
       fn = Nan::New<v8::Function>(onicecandidate_);
       container = Nan::New<v8::Object>();
@@ -497,7 +639,8 @@ void PeerConnection::On(Event *event) {
     case kPeerConnectionRenegotiation:
       fn = Nan::New<v8::Function>(onnegotiationneeded_);
       onnegotiationneeded_.Reset();
-      peer_connection_->CreateOffer(offer_observer_.get(), nullptr);
+      peer_connection_->CreateOffer(offer_observer_.get(),
+        constraints_->ToConstraints());
       break;
 
     case kPeerConnectionSetLocalDescription:

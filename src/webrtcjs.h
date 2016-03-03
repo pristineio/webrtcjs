@@ -6,14 +6,14 @@
 #include "webrtc/base/checks.h"
 #include "webrtc/base/ssladapter.h"
 #include "webrtc/media/devices/devicemanager.h"
-#include "talk/app/webrtc/peerconnectionfactory.h"
+#include "webrtc/api/peerconnectionfactory.h"
 
 #include "recording_decoder.h"
 
 class WebRtcJs {
  public:
   static void Init();
-  static cricket::DeviceManagerInterface* GetDeviceManager();
+  static webrtc::PeerConnectionFactoryInterface* GetPeerConnectionFactory();
 };
 
 #endif

@@ -4,7 +4,7 @@
 #include "webrtc/video_encoder.h"
 #include "webrtc/video_decoder.h"
 #include "webrtc/modules/video_coding/include/video_error_codes.h"
-#include "webrtc/media/webrtc/webrtcvideodecoderfactory.h"
+#include "webrtc/media/engine/webrtcvideodecoderfactory.h"
 
 #include "eventemitter.h"
 
@@ -35,7 +35,7 @@ class RecordingDecoder : public webrtc::VideoDecoder {
     override;
 
   int32_t Release() override;
-  int32_t Reset() override;
+  int32_t Reset();
   int32_t SetLinkedEncoder(webrtc::VideoEncoder* encoder);
   static int32_t decoder_counter;
 

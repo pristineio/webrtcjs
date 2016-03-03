@@ -7,9 +7,13 @@
     {
       'target_name': 'webrtcjs',
       'sources': [
-        'src/recording_decoder.cc',
+        'src/videosink.cc',
+        # 'src/recording_decoder.cc',
+        'src/mediaconstraints.cc',
+        'src/mediastreamtrack.cc',
+        'src/mediastream.cc',
         'src/observers.cc',
-        'src/mediadevices.cc',
+        # 'src/mediadevices.cc',
         'src/peerconnection.cc',
         'src/eventemitter.cc',
         'src/webrtcjs.cc',
@@ -85,37 +89,37 @@
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/librtp_rtcp.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libremote_bitrate_estimator.a',
 
-          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/system_wrappers/libsystem_wrappers.a',
-
 
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libvideo_capture.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libvideo_capture_module_internal_impl.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libvideo_capture_module.a',
-
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libvideo_processing.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libvideo_processing_sse2.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libwebrtc_video_coding.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libwebrtc_h264.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libwebrtc_i420.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/video_coding/codecs/vp8/libwebrtc_vp8.a',
-          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/common_video/libcommon_video.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/video_coding/utility/libvideo_coding_utility.a',
-          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_new.a',
-          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_mmx.a',
+          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/common_video/libcommon_video.a',
+
+
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_sse2.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_ssse3.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_sse4_1.a',
+          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_mmx.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_avx.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_avx2.a',
+          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_new.a',
+
+
+
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/video_coding/codecs/vp9/libwebrtc_vp9.a',
 
-
-
+          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/system_wrappers/libsystem_wrappers.a',
 
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/system_wrappers/libmetrics_default.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/libjingle/xmllite/librtc_xmllite.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/libjingle/xmpp/librtc_xmpp.a',
-
 
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libvideo_render_module_internal_impl.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/usrsctp/libusrsctplib.a',

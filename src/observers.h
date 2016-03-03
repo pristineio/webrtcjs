@@ -1,9 +1,11 @@
 #ifndef WEBRTCJS_OBSERVERS_H
 #define WEBRTCJS_OBSERVERS_H
 
-#include "eventemitter.h"
-#include "talk/app/webrtc/peerconnectioninterface.h"
+#include "webrtc/api/peerconnectioninterface.h"
 #include "webrtc/base/json.h"
+
+#include "eventemitter.h"
+
 
 class LocalDescriptionObserver
   : public webrtc::SetSessionDescriptionObserver,
@@ -59,16 +61,38 @@ class PeerConnectionObserver
  public:
   PeerConnectionObserver(EventEmitter* listener=nullptr);
   void On(Event* event) final;
-
-  void OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState state) final;
-  void OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState state) final;
-  void OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState state) final;
-  void OnStateChange(webrtc::PeerConnectionObserver::StateType state) final;
+  void OnSignalingChange(
+    webrtc::PeerConnectionInterface::SignalingState state) final;
+  void OnIceConnectionChange(
+    webrtc::PeerConnectionInterface::IceConnectionState state) final;
+  void OnIceGatheringChange(
+    webrtc::PeerConnectionInterface::IceGatheringState state) final;
+  void OnStateChange(webrtc::PeerConnectionObserver::StateType state);
   void OnIceCandidate(const webrtc::IceCandidateInterface* candidate) final;
   void OnDataChannel(webrtc::DataChannelInterface* channel) final;
   void OnRenegotiationNeeded() final;
   void OnAddStream(webrtc::MediaStreamInterface* stream) final;
   void OnRemoveStream(webrtc::MediaStreamInterface* stream) final;
+};
+
+class MediaStreamTrackObserver
+  : public webrtc::ObserverInterface,
+    public rtc::RefCountInterface,
+    public EventEmitter {
+ public:
+  MediaStreamTrackObserver(EventEmitter* listener=nullptr);
+  void On(Event* event) final;
+  void OnChanged() final;
+};
+
+class MediaStreamObserver
+  : public webrtc::ObserverInterface,
+    public rtc::RefCountInterface,
+    public EventEmitter {
+ public:
+  MediaStreamObserver(EventEmitter* listener=nullptr);
+  void On(Event* event) final;
+  void OnChanged() final;
 };
 
 #endif

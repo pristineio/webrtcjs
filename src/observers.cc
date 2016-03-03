@@ -141,20 +141,20 @@ void PeerConnectionObserver::OnDataChannel(
   }
 }
 
-void PeerConnectionObserver::OnAddStream(webrtc::MediaStreamInterface *stream) {
+void PeerConnectionObserver::OnAddStream(webrtc::MediaStreamInterface* stream) {
   LOG(LS_INFO) << __FUNCTION__;
-  rtc::scoped_refptr<webrtc::MediaStreamInterface> mediaStream = stream;
-  if(mediaStream.get()) {
-    Emit(kPeerConnectionAddStream, mediaStream);
+  rtc::scoped_refptr<webrtc::MediaStreamInterface> media_stream = stream;
+  if(media_stream.get()) {
+    Emit(kPeerConnectionAddStream, media_stream);
   }
 }
 
 void PeerConnectionObserver::OnRemoveStream(
     webrtc::MediaStreamInterface *stream) {
   LOG(LS_INFO) << __FUNCTION__;
-  rtc::scoped_refptr<webrtc::MediaStreamInterface> mediaStream = stream;
-  if(mediaStream.get()) {
-    Emit(kPeerConnectionRemoveStream, mediaStream);
+  rtc::scoped_refptr<webrtc::MediaStreamInterface> media_stream = stream;
+  if(media_stream.get()) {
+    Emit(kPeerConnectionRemoveStream, media_stream);
   }
 }
 
@@ -175,4 +175,34 @@ void PeerConnectionObserver::OnIceCandidate(
     msg["candidate"] = sdp;
     Emit(kPeerConnectionIceCandidate, writer.write(msg));
   }
+}
+
+
+//
+// MediaStreamTrackObserver
+//
+MediaStreamTrackObserver::MediaStreamTrackObserver(EventEmitter* listener) :
+  EventEmitter(listener) { }
+
+void MediaStreamTrackObserver::On(Event* event) {
+  LOG(LS_INFO) << __FUNCTION__;
+}
+
+void MediaStreamTrackObserver::OnChanged() {
+  Emit(kMediaStreamTrackChanged);
+}
+
+
+//
+// MediaStreamObserver
+//
+MediaStreamObserver::MediaStreamObserver(EventEmitter* listener) :
+  EventEmitter(listener) { }
+
+void MediaStreamObserver::On(Event* event) {
+  LOG(LS_INFO) << __FUNCTION__;
+}
+
+void MediaStreamObserver::OnChanged() {
+  Emit(kMediaStreamChanged);
 }

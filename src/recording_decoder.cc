@@ -71,6 +71,7 @@ int32_t RecordingDecoder::Decode(const webrtc::EncodedImage& input_image,
 
   int32_t status = WEBRTC_VIDEO_CODEC_OK;
   frame_counter_++;
+
   if(file_) {
     write_ivf_frame_header(file_, input_image._timeStamp, input_image._length);
     fwrite(input_image._buffer, sizeof(char), input_image._length, file_);
