@@ -2,9 +2,6 @@
 
 rtc::scoped_ptr<rtc::Thread> signaling_thread_;
 rtc::scoped_ptr<rtc::Thread> worker_thread_;
-
-// rtc::scoped_ptr<cricket::WebRtcVideoDecoderFactory> decoder_factory_;
-
 rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pc_factory_;
 
 void WebRtcJs::Init() {
