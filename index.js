@@ -12,29 +12,25 @@ var ws = new WebSocket('wss://localhost:3232/ws?token=bob');
 //   }
 // };
 
+var aliceVideoTrack;
+var aliceVideoSink = new webrtcjs.VideoSink();
+aliceVideoSink.onframe = function(data) {
+  console.log('onframe', JSON.stringify(data));
+};
+
 var bob = new webrtcjs.RTCPeerConnection();
 
 bob.onicecandidate = function(event) {
   var candidate = event.candidate || event;
-  console.log('    Bob: onicecandidate ' + JSON.stringify(event));
-  ws.send(JSON.stringify({
-    to: 'alice',
-    type: 'ICE',
-    payload: candidate
-  }));
+  ws.send(JSON.stringify({to: 'alice', type: 'ICE', payload: candidate}));
 };
 
 bob.onaddstream = function(stream) {
-  var videoTrack = stream.getVideoTracks()[0];
-
-  // var videoSink = new webrtcjs.VideoSink();
-  // videoTrack.addSink(videoSink);
-
+  aliceVideoTrack = stream.getVideoTracks()[0];
+  aliceVideoTrack.addSink(aliceVideoSink);
   console.log('\n\n\n');
-  console.log(videoTrack);
+  console.log(aliceVideoTrack);
   console.log('\n\n\n');
-
-  process.exit(1);
 };
 
 ws.on('message', function(data) {

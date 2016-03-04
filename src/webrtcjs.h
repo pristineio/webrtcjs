@@ -8,8 +8,6 @@
 #include "webrtc/media/devices/devicemanager.h"
 #include "webrtc/api/peerconnectionfactory.h"
 
-#include "recording_decoder.h"
-
 class WebRtcJs {
  public:
   static void Init();

@@ -83,10 +83,10 @@ NAN_METHOD(MediaStreamTrack::AddSink) {
     rtc::scoped_refptr<webrtc::VideoTrackInterface>
       video(static_cast<webrtc::VideoTrackInterface*>(self->track_.get()));
 
-    // rtc::VideoSourceInterface<cricket::VideoFrame>* raw =
-    //   static_cast<rtc::VideoSourceInterface<cricket::VideoFrame>*>(video.get());
+    VideoSink* video_sink =
+      Nan::ObjectWrap::Unwrap<VideoSink>(info[0]->ToObject());
 
-    // video->AddOrUpdateSink(nullptr, rtc::VideoSinkWants());
+    video->AddOrUpdateSink(video_sink, rtc::VideoSinkWants());
   }
 
   info.GetReturnValue().SetUndefined();

@@ -35,6 +35,7 @@ enum EventType {
   kVideoDecoderDestroyed,
   kMediaStreamChanged,
   kMediaStreamTrackChanged,
+  kVideoSinkOnFrame,
 };
 
 template<class T> class EventWrapper;

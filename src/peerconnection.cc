@@ -546,6 +546,7 @@ void PeerConnection::On(Event *event) {
       argc = 1;
       break;
 
+    case kVideoSinkOnFrame:
     case kPeerConnectionCreateClosed:
     case kPeerConnectionDataChannel:
     case kPeerConnectionIceGathering:

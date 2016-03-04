@@ -23,6 +23,28 @@ VideoSink::~VideoSink() { }
 
 void VideoSink::OnFrame(const cricket::VideoFrame& frame) {
   ++number_of_rendered_frames_;
+  Emit(kVideoSinkOnFrame, number_of_rendered_frames_);
+}
+
+void VideoSink::On(Event* event) {
+  EventType type = event->As<EventType>();
+  if(type != kVideoSinkOnFrame) {
+    return;
+  }
+  int32_t n = event->Unwrap<int32_t>();
+
+  Nan::HandleScope scope;
+  v8::Local<v8::Value> argv[1];
+  v8::Local<v8::Object> container = Nan::New<v8::Object>();
+
+  container->Set(Nan::New("framesRendered").ToLocalChecked(),
+    Nan::New<v8::Int32>(n));
+
+  v8::Local<v8::Function> fn = Nan::New<v8::Function>(onframe_);
+
+  argv[0] = container;
+  Nan::Callback cb(fn);
+  cb.Call(1, argv);
 }
 
 NAN_METHOD(VideoSink::New) {
@@ -42,7 +64,8 @@ NAN_GETTER(VideoSink::GetOnFrame) {
 NAN_SETTER(VideoSink::SetOnFrame) {
   VideoSink* self = Nan::ObjectWrap::Unwrap<VideoSink>(info.Holder());
   self->onframe_.Reset();
-  if(!value.IsEmpty() && value->IsFunction()) {
-    self->onframe_.Reset<v8::Function>(v8::Local<v8::Function>::Cast(value));
+  if(value.IsEmpty() || !value->IsFunction()) {
+    return Nan::ThrowError("Callback is not a function");
   }
+  self->onframe_.Reset<v8::Function>(v8::Local<v8::Function>::Cast(value));
 }

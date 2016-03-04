@@ -8,12 +8,10 @@
       'target_name': 'webrtcjs',
       'sources': [
         'src/videosink.cc',
-        # 'src/recording_decoder.cc',
         'src/mediaconstraints.cc',
         'src/mediastreamtrack.cc',
         'src/mediastream.cc',
         'src/observers.cc',
-        # 'src/mediadevices.cc',
         'src/peerconnection.cc',
         'src/eventemitter.cc',
         'src/webrtcjs.cc',
@@ -36,9 +34,12 @@
       ],
       'link_settings': {
         'libraries': [
-          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/talk/libjingle_peerconnection.a',
+          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/api/libjingle_peerconnection.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/p2p/librtc_p2p.a',
-          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/talk/libjingle_p2p.a',
+          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/pc/librtc_pc.a',
+#          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/talk/libjingle_p2p.a',
+
+          '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libcongestion_controller.a',
 
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/media/librtc_media.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/sound/librtc_sound.a',
@@ -67,11 +68,7 @@
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libmedia_file.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/libyuv.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libjpeg_turbo/libjpeg_turbo.a',
-
-
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/libwebrtc.a',
-
-
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/libwebrtc_common.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/librtc_event_log.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/librtc_event_log_proto.a',
@@ -88,8 +85,6 @@
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libpaced_sender.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/librtp_rtcp.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libremote_bitrate_estimator.a',
-
-
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libvideo_capture.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libvideo_capture_module_internal_impl.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libvideo_capture_module.a',
@@ -101,8 +96,6 @@
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/video_coding/codecs/vp8/libwebrtc_vp8.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/video_coding/utility/libvideo_coding_utility.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/common_video/libcommon_video.a',
-
-
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_sse2.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_ssse3.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_sse4_1.a',
@@ -110,22 +103,15 @@
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_avx.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_intrinsics_avx2.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libvpx_new/libvpx_new.a',
-
-
-
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/video_coding/codecs/vp9/libwebrtc_vp9.a',
-
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/system_wrappers/libsystem_wrappers.a',
-
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/system_wrappers/libmetrics_default.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/libjingle/xmllite/librtc_xmllite.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/libjingle/xmpp/librtc_xmpp.a',
-
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/modules/libvideo_render_module_internal_impl.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/usrsctp/libusrsctplib.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/chromium/src/third_party/libsrtp/libsrtp.a',
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/system_wrappers/libfield_trial_default.a',
-
           '<@(WEBRTC_ROOT)/out/<@(FLAVOR)/obj/webrtc/base/librtc_base_approved.a',
           '-lX11',
         ],

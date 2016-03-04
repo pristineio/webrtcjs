@@ -7,6 +7,7 @@
 
 #include "observers.h"
 #include "eventemitter.h"
+#include "videosink.h"
 
 class MediaStreamTrack : public Nan::ObjectWrap, public EventEmitter {
  friend class MediaStream;
