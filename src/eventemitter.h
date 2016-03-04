@@ -31,8 +31,6 @@ enum EventType {
   kPeerConnectionRemoveStream,
   kPeerConnectionRenegotiation,
   kPeerConnectionStats,
-  kVideoDecoderCreated,
-  kVideoDecoderDestroyed,
   kMediaStreamChanged,
   kMediaStreamTrackChanged,
   kVideoSinkOnFrame,
