@@ -31,17 +31,16 @@ void VideoSink::On(Event* event) {
   if(type != kVideoSinkOnFrame) {
     return;
   }
+  if(onframe_.IsEmpty()) {
+    return;
+  }
   int32_t n = event->Unwrap<int32_t>();
-
   Nan::HandleScope scope;
   v8::Local<v8::Value> argv[1];
   v8::Local<v8::Object> container = Nan::New<v8::Object>();
-
   container->Set(Nan::New("framesRendered").ToLocalChecked(),
     Nan::New<v8::Int32>(n));
-
   v8::Local<v8::Function> fn = Nan::New<v8::Function>(onframe_);
-
   argv[0] = container;
   Nan::Callback cb(fn);
   cb.Call(1, argv);
