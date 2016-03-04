@@ -2,6 +2,7 @@
 var express = require('express');
 var WebSocketServer = require('wsd').Server;
 var https = require('https');
+var http = require('http');
 var url = require('url');
 var ServerResponse = require('http').ServerResponse;
 var fs = require('fs');
@@ -15,7 +16,7 @@ var options = {
   cert: fs.readFileSync('./ssl/crt')
 };
 
-app.server = https.createServer(options, app).listen(3232);
+app.server = http.createServer(app).listen(3232);
 
 var wss = new WebSocketServer({server: app.server, path: '/ws'});
 
