@@ -4,6 +4,7 @@
 #include <nan.h>
 
 #include "webrtc/base/scoped_ptr.h"
+
 #include "eventemitter.h"
 #include "observers.h"
 #include "mediastreamtrack.h"
