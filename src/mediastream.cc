@@ -17,9 +17,6 @@ NAN_MODULE_INIT(MediaStream::Init) {
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("active").ToLocalChecked(),
     MediaStream::GetActive);
 
-  Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("ended").ToLocalChecked(),
-    MediaStream::GetEnded);
-
   Nan::SetAccessor(tpl->InstanceTemplate(), Nan::New("id").ToLocalChecked(),
     MediaStream::GetId);
 
@@ -38,7 +35,7 @@ NAN_MODULE_INIT(MediaStream::Init) {
     Nan::GetFunction(tpl).ToLocalChecked());
 }
 
-MediaStream::MediaStream() : active_(false), ended_(true) {
+MediaStream::MediaStream() : active_(false) {
   observer_ = new rtc::RefCountedObject<MediaStreamObserver>(this);
 }
 
@@ -155,42 +152,45 @@ NAN_METHOD(MediaStream::RemoveTrack) {
 }
 
 NAN_METHOD(MediaStream::Clone) {
-//   rtc::scoped_refptr<webrtc::MediaStreamInterface> self = MediaStream::Unwrap(info.This());
-  // rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory = webrtc::CreatePeerConnectionFactory();
-  // rtc::scoped_refptr<webrtc::MediaStreamInterface> stream;
+  rtc::scoped_refptr<webrtc::MediaStreamInterface> self =
+    MediaStream::Unwrap(info.This());
+  if(!self.get()) {
+    Nan::ThrowError("Bad pointer to webrtc::MediaStreamInterface");
+  }
 
-//   if(self.get() && factory.get()) {
-//     stream = factory->CreateLocalMediaStream("stream");
+  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory =
+    WebRtcJs::GetPeerConnectionFactory();
+  if(!factory.get()) {
+    Nan::ThrowError("Bad pointer to webrtc::PeerConnectionFactoryInterface");
+  }
 
-//     if(stream.get()) {
-//       webrtc::AudioTrackVector audio_list = self->GetAudioTracks();
-//       std::vector<rtc::scoped_refptr<webrtc::AudioTrackInterface> >::iterator audio_it;
+  rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
+    factory->CreateLocalMediaStream("stream");
+  if(!stream.get()) {
+    Nan::ThrowError("Could not create new webrtc::MediaStreamInterface");
+  }
 
-//       for (audio_it = audio_list.begin(); audio_it != audio_list.end(); audio_it++) {
-//         rtc::scoped_refptr<webrtc::AudioTrackInterface> track(*audio_it);
+  webrtc::AudioTrackVector audio_list = self->GetAudioTracks();
+  std::vector<rtc::scoped_refptr<webrtc::AudioTrackInterface> >::iterator
+    audio_it;
+  for(audio_it = audio_list.begin(); audio_it != audio_list.end(); audio_it++) {
+    rtc::scoped_refptr<webrtc::AudioTrackInterface> track(*audio_it);
+    if(track.get()) {
+      stream->AddTrack(track.get());
+    }
+  }
 
-//         if(track.get()) {
-//           stream->AddTrack(track.get());
-//         }
-//       }
+  webrtc::VideoTrackVector video_list = self->GetVideoTracks();
+  std::vector<rtc::scoped_refptr<webrtc::VideoTrackInterface> >::iterator
+    video_it;
+  for(video_it = video_list.begin(); video_it != video_list.end(); video_it++) {
+    rtc::scoped_refptr<webrtc::VideoTrackInterface> track(*video_it);
+    if(track.get()) {
+      stream->AddTrack(track.get());
+    }
+  }
 
-//       webrtc::VideoTrackVector video_list = self->GetVideoTracks();
-//       std::vector<rtc::scoped_refptr<webrtc::VideoTrackInterface> >::iterator video_it;
-
-//       for (video_it = video_list.begin(); video_it != video_list.end(); video_it++) {
-//         rtc::scoped_refptr<webrtc::VideoTrackInterface> track(*video_it);
-
-//         if(track.get()) {
-//           stream->AddTrack(track.get());
-//         }
-//       }
-
-//       return info.GetReturnValue().Set(MediaStream::New(stream));
-//     }
-//   }
-
-  // Nan::ThrowError("Internal Error");
-  info.GetReturnValue().SetUndefined();
+  info.GetReturnValue().Set(MediaStream::New(stream));
 }
 
 NAN_METHOD(MediaStream::GetTrackById) {
@@ -284,11 +284,6 @@ NAN_GETTER(MediaStream::GetActive) {
   return info.GetReturnValue().Set(Nan::New(self->active_));
 }
 
-NAN_GETTER(MediaStream::GetEnded) {
-  MediaStream* self = Nan::ObjectWrap::Unwrap<MediaStream>(info.Holder());
-  return info.GetReturnValue().Set(Nan::New(self->ended_));
-}
-
 NAN_GETTER(MediaStream::GetId) {
   rtc::scoped_refptr<webrtc::MediaStreamInterface> stream =
     MediaStream::Unwrap(info.This());
@@ -331,8 +326,6 @@ NAN_SETTER(MediaStream::SetOnRemoveTrack) {
 void MediaStream::On(Event* event) {
   Nan::HandleScope scope;
   EventType type = event->As<EventType>();
-  v8::Local<v8::Function> onended;
-  v8::Local<v8::Value> onended_argv[1];
 
   if(type != kMediaStreamChanged) {
     return;
@@ -345,175 +338,170 @@ void MediaStream::On(Event* event) {
   webrtc::AudioTrackVector audio_list = stream_->GetAudioTracks();
   webrtc::VideoTrackVector video_list = stream_->GetVideoTracks();
 
+  LOG(LS_INFO) << __FUNCTION__ << ": There are " << video_list.size() <<
+    " video tracks and " << audio_list.size() << " audio tracks";
+
   if(!audio_list.empty() || !video_list.empty()) {
+    LOG(LS_INFO) << __FUNCTION__ << ": Setting stream active";
     active_ = true;
-    ended_ = false;
   } else {
+    LOG(LS_INFO) << __PRETTY_FUNCTION__ << ": Setting stream inactive";
     active_ = false;
-    ended_ = true;
-  //   if(!audio_tracks_.empty() || !video_tracks_.empty()) {
-  //     onended = Nan::New<v8::Function>(onended_);
-  //   }
   }
 
   if(audio_list.size() != audio_tracks_.size()) {
-    std::vector<rtc::scoped_refptr<webrtc::AudioTrackInterface>>::iterator
-      last_audio, cur_audio;
+    // std::vector<rtc::scoped_refptr<webrtc::AudioTrackInterface>>::iterator
+    //   last_audio, cur_audio;
 
-    if(audio_list.size() > audio_tracks_.size()) {
-      for(cur_audio = audio_list.begin(); cur_audio != audio_list.end();
-          cur_audio++) {
-        rtc::scoped_refptr<webrtc::AudioTrackInterface> cur_track(*cur_audio);
-        std::string cur_id;
-        bool found = false;
-        if(cur_track.get()) {
-          cur_id = cur_track->id();
-        }
-        if(audio_tracks_.size()) {
-          for(last_audio = audio_tracks_.begin();
-              last_audio != audio_tracks_.end(); last_audio++) {
-            rtc::scoped_refptr<webrtc::AudioTrackInterface>
-              last_track(*last_audio);
-            std::string last_id;
-            if(last_track.get()) {
-              last_id = last_track->id();
-            }
-            if(cur_id.compare(last_id) == 0) {
-              found = true;
-              break;
-            }
-          }
-        }
-        if(!found) {
-          v8::Local<v8::Function> fn = Nan::New<v8::Function>(onaddtrack_);
-          v8::Local<v8::Value> argv[] = {
-            MediaStreamTrack::New(cur_track.get())
-          };
-          if(!fn.IsEmpty() && fn->IsFunction()) {
-            Nan::Callback cb(fn);
-            cb.Call(1, argv);
-          }
-        }
-      }
-    } else {
-      for(cur_audio = audio_tracks_.begin(); cur_audio != audio_tracks_.end();
-          cur_audio++) {
-        rtc::scoped_refptr<webrtc::AudioTrackInterface> cur_track(*cur_audio);
-        std::string cur_id;
-        bool found = false;
-        if(cur_track.get()) {
-          cur_id = cur_track->id();
-        }
-        if(audio_list.size()) {
-          for(last_audio = audio_list.begin(); last_audio != audio_list.end();
-              last_audio++) {
-            rtc::scoped_refptr<webrtc::AudioTrackInterface>
-              last_track(*last_audio);
-            std::string last_id;
-            if(last_track.get()) {
-              last_id = last_track->id();
-            }
-            if(cur_id.compare(last_id) == 0) {
-              found = true;
-              break;
-            }
-          }
-        }
-        if(!found) {
-          v8::Local<v8::Function> fn = Nan::New<v8::Function>(onremovetrack_);
-          v8::Local<v8::Value> argv[] = {
-            MediaStreamTrack::New(cur_track.get())
-          };
-          if(!fn.IsEmpty() && fn->IsFunction()) {
-            Nan::Callback cb(fn);
-            cb.Call(1, argv);
-          }
-        }
-      }
-    }
+    // if(audio_list.size() > audio_tracks_.size()) {
+    //   for(cur_audio = audio_list.begin(); cur_audio != audio_list.end();
+    //       cur_audio++) {
+    //     rtc::scoped_refptr<webrtc::AudioTrackInterface> cur_track(*cur_audio);
+    //     std::string cur_id;
+    //     bool found = false;
+    //     if(cur_track.get()) {
+    //       cur_id = cur_track->id();
+    //     }
+    //     if(audio_tracks_.size()) {
+    //       for(last_audio = audio_tracks_.begin();
+    //           last_audio != audio_tracks_.end(); last_audio++) {
+    //         rtc::scoped_refptr<webrtc::AudioTrackInterface>
+    //           last_track(*last_audio);
+    //         std::string last_id;
+    //         if(last_track.get()) {
+    //           last_id = last_track->id();
+    //         }
+    //         if(cur_id.compare(last_id) == 0) {
+    //           found = true;
+    //           break;
+    //         }
+    //       }
+    //     }
+    //     if(!found) {
+    //       v8::Local<v8::Function> fn = Nan::New<v8::Function>(onaddtrack_);
+    //       v8::Local<v8::Value> argv[] = {
+    //         MediaStreamTrack::New(cur_track.get())
+    //       };
+    //       if(!fn.IsEmpty() && fn->IsFunction()) {
+    //         Nan::Callback cb(fn);
+    //         cb.Call(1, argv);
+    //       }
+    //     }
+    //   }
+    // } else {
+    //   for(cur_audio = audio_tracks_.begin(); cur_audio != audio_tracks_.end();
+    //       cur_audio++) {
+    //     rtc::scoped_refptr<webrtc::AudioTrackInterface> cur_track(*cur_audio);
+    //     std::string cur_id;
+    //     bool found = false;
+    //     if(cur_track.get()) {
+    //       cur_id = cur_track->id();
+    //     }
+    //     if(audio_list.size()) {
+    //       for(last_audio = audio_list.begin(); last_audio != audio_list.end();
+    //           last_audio++) {
+    //         rtc::scoped_refptr<webrtc::AudioTrackInterface>
+    //           last_track(*last_audio);
+    //         std::string last_id;
+    //         if(last_track.get()) {
+    //           last_id = last_track->id();
+    //         }
+    //         if(cur_id.compare(last_id) == 0) {
+    //           found = true;
+    //           break;
+    //         }
+    //       }
+    //     }
+    //     if(!found) {
+    //       v8::Local<v8::Function> fn = Nan::New<v8::Function>(onremovetrack_);
+    //       v8::Local<v8::Value> argv[] = {
+    //         MediaStreamTrack::New(cur_track.get())
+    //       };
+    //       if(!fn.IsEmpty() && fn->IsFunction()) {
+    //         Nan::Callback cb(fn);
+    //         cb.Call(1, argv);
+    //       }
+    //     }
+    //   }
+    // }
     audio_tracks_ = audio_list;
   }
 
   if(video_list.size() != video_tracks_.size()) {
-    std::vector<rtc::scoped_refptr<webrtc::VideoTrackInterface> >::iterator
-      last_video, cur_video;
+    // std::vector<rtc::scoped_refptr<webrtc::VideoTrackInterface> >::iterator
+    //   last_video, cur_video;
 
-    if(video_list.size() > video_tracks_.size()) {
-      for(cur_video = video_list.begin(); cur_video != video_list.end();
-          cur_video++) {
-        rtc::scoped_refptr<webrtc::VideoTrackInterface> cur_track(*cur_video);
-        std::string cur_id;
-        bool found = false;
-        if(cur_track.get()) {
-          cur_id = cur_track->id();
-        }
-        if(video_tracks_.size()) {
-          for(last_video = video_tracks_.begin();
-              last_video != video_tracks_.end(); last_video++) {
-            rtc::scoped_refptr<webrtc::VideoTrackInterface>
-              last_track(*last_video);
-            std::string last_id;
-            if(last_track.get()) {
-              last_id = last_track->id();
-            }
-            if(cur_id.compare(last_id) == 0) {
-              found = true;
-              break;
-            }
-          }
-        }
-        if(!found) {
-          v8::Local<v8::Function> fn = Nan::New<v8::Function>(onaddtrack_);
-          v8::Local<v8::Value> argv[] = {
-            MediaStreamTrack::New(cur_track.get())
-          };
-          if(!fn.IsEmpty() && fn->IsFunction()) {
-            Nan::Callback cb(fn);
-            cb.Call(1, argv);
-          }
-        }
-      }
-    } else {
-      for(cur_video = video_tracks_.begin(); cur_video != video_tracks_.end();
-          cur_video++) {
-        rtc::scoped_refptr<webrtc::VideoTrackInterface> cur_track(*cur_video);
-        std::string cur_id;
-        bool found = false;
-        if(cur_track.get()) {
-          cur_id = cur_track->id();
-        }
-        if(video_list.size()) {
-          for(last_video = video_list.begin(); last_video != video_list.end();
-              last_video++) {
-            rtc::scoped_refptr<webrtc::VideoTrackInterface>
-              last_track(*last_video);
-            std::string last_id;
-            if(last_track.get()) {
-              last_id = last_track->id();
-            }
-            if(cur_id.compare(last_id) == 0) {
-              found = true;
-              break;
-            }
-          }
-        }
-        if(!found) {
-          v8::Local<v8::Function> fn = Nan::New<v8::Function>(onremovetrack_);
-          v8::Local<v8::Value> argv[] = {
-            MediaStreamTrack::New(cur_track.get())
-          };
-          if(!fn.IsEmpty() && fn->IsFunction()) {
-            Nan::Callback cb(fn);
-            cb.Call(1, argv);
-          }
-        }
-      }
-    }
+    // if(video_list.size() > video_tracks_.size()) {
+    //   for(cur_video = video_list.begin(); cur_video != video_list.end();
+    //       cur_video++) {
+    //     rtc::scoped_refptr<webrtc::VideoTrackInterface> cur_track(*cur_video);
+    //     std::string cur_id;
+    //     bool found = false;
+    //     if(cur_track.get()) {
+    //       cur_id = cur_track->id();
+    //     }
+    //     if(video_tracks_.size()) {
+    //       for(last_video = video_tracks_.begin();
+    //           last_video != video_tracks_.end(); last_video++) {
+    //         rtc::scoped_refptr<webrtc::VideoTrackInterface>
+    //           last_track(*last_video);
+    //         std::string last_id;
+    //         if(last_track.get()) {
+    //           last_id = last_track->id();
+    //         }
+    //         if(cur_id.compare(last_id) == 0) {
+    //           found = true;
+    //           break;
+    //         }
+    //       }
+    //     }
+    //     if(!found) {
+    //       v8::Local<v8::Function> fn = Nan::New<v8::Function>(onaddtrack_);
+    //       v8::Local<v8::Value> argv[] = {
+    //         MediaStreamTrack::New(cur_track.get())
+    //       };
+    //       if(!fn.IsEmpty() && fn->IsFunction()) {
+    //         Nan::Callback cb(fn);
+    //         cb.Call(1, argv);
+    //       }
+    //     }
+    //   }
+    // } else {
+    //   for(cur_video = video_tracks_.begin(); cur_video != video_tracks_.end();
+    //       cur_video++) {
+    //     rtc::scoped_refptr<webrtc::VideoTrackInterface> cur_track(*cur_video);
+    //     std::string cur_id;
+    //     bool found = false;
+    //     if(cur_track.get()) {
+    //       cur_id = cur_track->id();
+    //     }
+    //     if(video_list.size()) {
+    //       for(last_video = video_list.begin(); last_video != video_list.end();
+    //           last_video++) {
+    //         rtc::scoped_refptr<webrtc::VideoTrackInterface>
+    //           last_track(*last_video);
+    //         std::string last_id;
+    //         if(last_track.get()) {
+    //           last_id = last_track->id();
+    //         }
+    //         if(cur_id.compare(last_id) == 0) {
+    //           found = true;
+    //           break;
+    //         }
+    //       }
+    //     }
+    //     if(!found) {
+    //       v8::Local<v8::Function> fn = Nan::New<v8::Function>(onremovetrack_);
+    //       v8::Local<v8::Value> argv[] = {
+    //         MediaStreamTrack::New(cur_track.get())
+    //       };
+    //       if(!fn.IsEmpty() && fn->IsFunction()) {
+    //         Nan::Callback cb(fn);
+    //         cb.Call(1, argv);
+    //       }
+    //     }
+    //   }
+    // }
     video_tracks_ = video_list;
-  }
-
-  if(!onended.IsEmpty() && onended->IsFunction()) {
-    Nan::Callback cb(onended);
-    cb.Call(0, onended_argv);
   }
 }

@@ -2,7 +2,11 @@
 
 Nan::Persistent<v8::Function> PeerConnection::constructor;
 
-PeerConnection::PeerConnection() {
+PeerConnection::PeerConnection(const v8::Local<v8::Object> &configuration,
+    const v8::Local<v8::Object> &constraints) {
+
+  constraints_ = MediaConstraints::New(constraints);
+
   stats_observer_ = new rtc::RefCountedObject<StatsObserver>(this);
   offer_observer_ = new rtc::RefCountedObject<OfferObserver>(this);
   answer_observer_ = new rtc::RefCountedObject<AnswerObserver>(this);
@@ -84,7 +88,17 @@ NAN_METHOD(PeerConnection::New) {
   if(!info.IsConstructCall()) {
     return Nan::ThrowError("Use new operator");
   }
-  PeerConnection* self = new PeerConnection();
+
+  v8::Local<v8::Object> configuration;
+  v8::Local<v8::Object> constraints;
+  if(info.Length() >= 1 && info[0]->IsObject()) {
+    configuration = v8::Local<v8::Object>::Cast(info[0]);
+    if(info.Length() >= 2 && info[1]->IsObject()) {
+      constraints = v8::Local<v8::Object>::Cast(info[1]);
+    }
+  }
+
+  PeerConnection* self = new PeerConnection(configuration, constraints);
   self->Wrap(info.This());
   info.GetReturnValue().Set(info.This());
 }
@@ -113,8 +127,8 @@ NAN_METHOD(PeerConnection::CreateOffer) {
       info[1]));
   }
 
-  peer_connection->CreateOffer(self->offer_observer_.get(), nullptr);
-    // constraints->ToConstraints());
+  peer_connection->CreateOffer(self->offer_observer_.get(),
+    constraints->ToConstraints());
 
   info.GetReturnValue().SetUndefined();
 }
@@ -143,8 +157,8 @@ NAN_METHOD(PeerConnection::CreateAnswer) {
       info[1]));
   }
 
-  peer_connection->CreateAnswer(self->answer_observer_.get(), nullptr);
-    // constraints->ToConstraints());
+  peer_connection->CreateAnswer(self->answer_observer_.get(),
+    constraints->ToConstraints());
 
   info.GetReturnValue().SetUndefined();
 }
@@ -206,7 +220,7 @@ NAN_METHOD(PeerConnection::SetLocalDescription) {
 }
 
 NAN_METHOD(PeerConnection::SetRemoteDescription) {
-  LOG(LS_INFO) << __FUNCTION__;
+  LOG(LS_INFO) << "-------------------------------------------" << __FUNCTION__;
 
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
   webrtc::PeerConnectionInterface* peer_connection = self->GetPeerConnection();
@@ -248,7 +262,7 @@ NAN_METHOD(PeerConnection::SetRemoteDescription) {
   v8::String::Utf8Value type(type_value->ToString());
   v8::String::Utf8Value sdp(sdp_value->ToString());
   webrtc::SessionDescriptionInterface* desc(
-    webrtc::CreateSessionDescription(*type, *sdp, 0));
+    webrtc::CreateSessionDescription(*type, *sdp, nullptr));
 
   if(!desc) {
     Nan::ThrowError("webrtc::CreateSessionDescription failure");
@@ -345,6 +359,8 @@ NAN_METHOD(PeerConnection::GetStats) {
 
 
 NAN_METHOD(PeerConnection::AddStream) {
+  LOG(LS_INFO) << __FUNCTION__;
+
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
   rtc::scoped_refptr<webrtc::MediaStreamInterface> media_stream =
     MediaStream::Unwrap(info[0]);
@@ -531,14 +547,6 @@ void PeerConnection::On(Event *event) {
   std::string data;
 
   switch(type) {
-    case kVideoDecoderCreated:
-      LOG(LS_INFO) << "kVideoDecoderCreated";
-      break;
-
-    case kVideoDecoderDestroyed:
-      LOG(LS_INFO) << "kVideoDecoderDestroyed";
-      break;
-
     case kPeerConnectionAddStream:
       fn = Nan::New<v8::Function>(onaddstream_);
       argv[0] = MediaStream::New(
@@ -546,35 +554,15 @@ void PeerConnection::On(Event *event) {
       argc = 1;
       break;
 
-    case kVideoSinkOnFrame:
-    case kPeerConnectionCreateClosed:
-    case kPeerConnectionDataChannel:
-    case kPeerConnectionIceGathering:
-      break;
-
     case kPeerConnectionRemoveStream:
       fn = Nan::New<v8::Function>(onremovestream_);
-      container = Nan::New<v8::Object>();
-      container->Set(Nan::New("stream").ToLocalChecked(),
-        MediaStream::New(
-          event->Unwrap<rtc::scoped_refptr<webrtc::MediaStreamInterface>>()));
-      argv[0] = container;
+      argv[0] = MediaStream::New(
+        event->Unwrap<rtc::scoped_refptr<webrtc::MediaStreamInterface>>());
       argc = 1;
-      break;
-
-    case kPeerConnectionSignalChange:
-    case kMediaStreamChanged:
-    case kMediaStreamTrackChanged:
       break;
 
     case kPeerConnectionStats:
       fn = Nan::New<v8::Function>(onstats_);
-
-      // v8::Local<v8::Array> stats_reports = Nan::New<v8::Array>(reports.size());
-
-      // std::vector<const webrtc::StatsReport*> raw =
-      //   event->Unwrap<webrtc::StatsReports>();
-
       argv[0] = { Nan::Null() };
       argc = 1;
       break;
@@ -640,8 +628,6 @@ void PeerConnection::On(Event *event) {
     case kPeerConnectionRenegotiation:
       fn = Nan::New<v8::Function>(onnegotiationneeded_);
       onnegotiationneeded_.Reset();
-      peer_connection_->CreateOffer(offer_observer_.get(),
-        constraints_->ToConstraints());
       break;
 
     case kPeerConnectionSetLocalDescription:
@@ -674,6 +660,15 @@ void PeerConnection::On(Event *event) {
       data = event->Unwrap<std::string>();
       argv[0] = Nan::Error(data.c_str());
       argc = 1;
+      break;
+
+    case kVideoSinkOnFrame:
+    case kPeerConnectionCreateClosed:
+    case kPeerConnectionDataChannel:
+    case kPeerConnectionIceGathering:
+    case kPeerConnectionSignalChange:
+    case kMediaStreamChanged:
+    case kMediaStreamTrackChanged:
       break;
   }
 

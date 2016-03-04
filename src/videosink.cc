@@ -22,7 +22,7 @@ VideoSink::VideoSink() { }
 VideoSink::~VideoSink() { }
 
 void VideoSink::OnFrame(const cricket::VideoFrame& frame) {
-  ++number_of_rendered_frames_;
+  // ++number_of_rendered_frames_;
   Emit(kVideoSinkOnFrame, number_of_rendered_frames_);
 }
 

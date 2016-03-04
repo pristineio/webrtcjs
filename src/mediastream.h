@@ -5,6 +5,7 @@
 
 #include "webrtc/base/scoped_ptr.h"
 
+#include "webrtcjs.h"
 #include "eventemitter.h"
 #include "observers.h"
 #include "mediastreamtrack.h"
@@ -33,7 +34,6 @@ class MediaStream : public Nan::ObjectWrap, public EventEmitter {
   static NAN_SETTER(SetOnRemoveTrack);
 
   static NAN_GETTER(GetActive);
-  static NAN_GETTER(GetEnded);
   static NAN_GETTER(GetId);
 
   rtc::scoped_refptr<MediaStreamObserver> observer_;
@@ -43,7 +43,6 @@ class MediaStream : public Nan::ObjectWrap, public EventEmitter {
   webrtc::VideoTrackVector video_tracks_;
 
   bool active_;
-  bool ended_;
 
  public:
   static NAN_MODULE_INIT(Init);

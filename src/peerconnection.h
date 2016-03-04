@@ -51,7 +51,8 @@ class PeerConnection : public Nan::ObjectWrap, public EventEmitter {
   rtc::scoped_refptr<PeerConnectionObserver> peer_connection_observer_;
 
  private:
-  explicit PeerConnection();
+  explicit PeerConnection(const v8::Local<v8::Object> &configuration,
+    const v8::Local<v8::Object> &constraints);
   ~PeerConnection();
   static Nan::Persistent<v8::Function> constructor;
 
